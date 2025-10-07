@@ -1,61 +1,107 @@
 import { NextResponse } from "next/server"
-import { getPool } from "@/lib/db"
+import mysql from "mysql2/promise"
+import { dbConfig } from "@/lib/db-config"
 
 export async function GET() {
+  let connection
+
   try {
-    const pool = getPool()
+    // 🔌 Conexión directa con tu configuración
+    connection = await mysql.createConnection(dbConfig)
 
-    // GetTotalBloques
-    const [bloquesResult] = await pool.query("CALL GetTotalBloques()")
-    const totalBloques = (bloquesResult as any)[0]?.[0]?.total || 0
+    // === CONSULTAS DIRECTAS (sin CALL) ===
 
-    // GetTotalFraternos
-    const [fraternosResult] = await pool.query("CALL GetTotalFraternos()")
-    const totalFraternos = (fraternosResult as any)[0]?.[0]?.total || 0
+    // Total de bloques
+    const [bloquesRows] = await connection.query(`
+      SELECT COUNT(*) AS total FROM bloques
+    `)
+    const totalBloques = (bloquesRows as any)[0]?.total || 0
 
-    // totalvaronesfratenros (varones)
-    const [varonesResult] = await pool.query("CALL totalvaronesfraternos()")
-    const totalVarones = (varonesResult as any)[0]?.[0]?.total || 0
+    // Total de fraternos
+    const [fraternosRows] = await connection.query(`
+      SELECT COUNT(*) AS total FROM fraternos
+    `)
+    const totalFraternos = (fraternosRows as any)[0]?.total || 0
 
-    // totalInficGraternos (mujeres - asumiendo que este es el procedure para mujeres)
-    const [mujeresResult] = await pool.query("CALL totalmfraternos()")
-    const totalMujeres = (mujeresResult as any)[0]?.[0]?.total || 0
+    // Total de fraternos activos
+    const [activosRows] = await connection.query(`
+      SELECT COUNT(*) AS total FROM fraternos WHERE estado = 'Activo'
+    `)
+    const fraternosActivos = (activosRows as any)[0]?.total || 0
 
-    // sp_fraternos_por_bloque
-    const [fraternosPorBloqueResult] = await pool.query("CALL sp_fraternos_por_bloque()")
-    const fraternosPorBloque = (fraternosPorBloqueResult as any)[0] || []
+    // Total varones
+    const [varonesRows] = await connection.query(`
+      SELECT COUNT(*) AS total FROM fraternos WHERE genero = 'Masculino'
+    `)
+    const totalVarones = (varonesRows as any)[0]?.total || 0
 
-    // Consulta adicional para fraternos activos (si no hay procedure)
-    const [activosResult] = await pool.query("SELECT COUNT(*) as total FROM fraternos WHERE estado = 'Activo'")
-    const fraternosActivos = (activosResult as any)[0]?.total || 0
+    // Total mujeres
+    const [mujeresRows] = await connection.query(`
+      SELECT COUNT(*) AS total FROM fraternos WHERE genero = 'Femenino'
+    `)
+    const totalMujeres = (mujeresRows as any)[0]?.total || 0
 
-    // Consulta para próximos eventos
-    const [eventosResult] = await pool.query("SELECT COUNT(*) as total FROM eventos WHERE fecha >= CURDATE()")
-    const proximosEventos = (eventosResult as any)[0]?.total || 0
+    // Fraternos por bloque
+    const [fraternosPorBloqueRows] = await connection.query(`
+      SELECT 
+        b.nombre_bloque AS bloque,
+        COUNT(f.id) AS cantidad
+      FROM bloques b
+      LEFT JOIN fraternos f ON f.bloque_id = b.id
+      GROUP BY b.id, b.nombre_bloque
+      ORDER BY b.nombre_bloque
+    `)
+    const fraternosPorBloque = fraternosPorBloqueRows as any[]
 
+    // Próximos eventos
+    const [eventosRows] = await connection.query(`
+      SELECT COUNT(*) AS total FROM eventos WHERE fecha >= CURDATE()
+    `)
+    const proximosEventos = (eventosRows as any)[0]?.total || 0
+
+    // === RESPUESTA FINAL ===
     return NextResponse.json({
       success: true,
       data: {
+        // === Formato camelCase (dashboard) ===
         totalFraternos,
         fraternosActivos,
         totalBloques,
         proximosEventos,
         totalVarones,
         totalMujeres,
-        fraternosPorBloque: fraternosPorBloque.map((item: any) => ({
-          bloque: item.nombre_bloque || item.bloque,
-          cantidad: item.total || item.cantidad || 0,
+        fraternosPorBloque: fraternosPorBloque.map((item) => ({
+          bloque: item.bloque,
+          cantidad: item.cantidad,
         })),
+
+        // === Formato snake_case (reportes) ===
+        total_fraternos: totalFraternos,
+        fraternos_activos: fraternosActivos,
+        fraternos_inactivos: totalFraternos - fraternosActivos,
+        total_bloques: totalBloques,
+        total_inscripciones: 0, // si luego agregas inscripciones lo actualizamos
+        fraternos_por_bloque: fraternosPorBloque.map((item) => ({
+          bloque: item.bloque,
+          cantidad: item.cantidad,
+        })),
+        fraternos_por_genero: [
+          { genero: "Masculino", cantidad: totalVarones },
+          { genero: "Femenino", cantidad: totalMujeres },
+        ],
       },
     })
   } catch (error) {
     console.error("[v0] Error fetching dashboard stats:", error)
     return NextResponse.json(
       {
+        success: false,
         error: "Error al obtener estadísticas",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 },
     )
+  } finally {
+    if (connection) await connection.end()
   }
 }
