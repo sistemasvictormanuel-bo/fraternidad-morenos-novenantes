@@ -1,0 +1,272 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Fingerprint WebAPI Test App</title>
+    
+    <link rel="stylesheet" href="css/bootstrap-min.css">
+   <style>
+body {
+    font-family: 'Segoe UI', sans-serif;
+}
+
+span {
+    font-style: italic;
+}
+
+.container-fluid {
+  background-color:#0099cc;
+ }
+
+#Container {
+	margin: 20px auto;
+	width: 800px;
+	height: 800px;
+}
+
+#imagediv {
+	padding:0px;
+	margin: 0 auto;
+	width: 500px;
+	height: 500px;
+	overflow: hidden;
+    border: 1px solid rgba(51, 122, 183, 0.39);
+    display: table;
+}
+
+#imagediv img {
+	width: 100%;
+	height: 500px;
+}
+
+#imagediv div{
+	text-align: center;
+	vertical-align: middle;
+	height: 500px;
+	background: #d3d3d3;
+	display: table-cell;
+}
+
+
+#image {
+	width: 100%;
+}
+
+#imageGallery {
+	padding:0px;
+	margin: 0 auto;
+	width: 100%;
+	height: 100px;
+	overflow: hidden;
+}
+
+#imageGallery img{
+	float: left;
+	width:20%;
+	height: 100%
+}
+
+#deviceInfo {
+	padding:5px;
+	margin: 0 auto;
+	width: 100%;
+	height: 100px;
+	text-align: center;
+}
+
+#dynamicInfoDivs{
+	position: relative;
+	left: 30%;
+}
+
+#Scores {
+	margin: 0 auto;
+	width: 500px;
+    text-align:center;
+    border: 2px solid black; 
+}
+
+#status {
+    min-height: 22px;
+	text-align: center;
+	margin-bottom: 5px;
+	color: red;
+}
+
+#contentButtons{
+	padding: 5px;
+  	text-align: center;
+  	margin-bottom: 5px;
+}
+
+#readerDivButtons {
+	padding: 5px;
+  	text-align: center;
+  	margin-bottom: 5px;
+}
+
+#modalContent{
+	width: 350px;
+	margin: 0 auto;
+	padding : 5px;
+	text-align: left;
+	vertical-align: center;
+}
+
+#saveAndFormats{
+	position:relative;
+	left:660px;
+	top:-750px;
+	width:135px;
+}
+
+
+</style>
+</head>
+<body>
+    <div id="Container">
+        <nav class="navbar navbar-inverse">
+          <div class="container-fluid">
+            <div class="navbar-header">
+              <div class="navbar-brand" href="#" style="color: white;">Fingerprint WebAPI</div>
+            </div>
+            <ul class="nav navbar-nav">
+              <li id="Reader" class="active">
+                <a href="#" style="color: white;" onclick="toggle_visibility(['content-reader','content-capture']);setActive('Reader','Capture')">
+                    Reader</a>
+              </li>
+            </ul>
+            <ul class="nav navbar-nav">
+              <li id="Capture" class="">
+                <a href="#" style="color: white;" onclick="toggle_visibility(['content-capture','content-reader']);setActive('Capture','Reader')">
+                    Capture</a>
+              </li>
+            </ul>                       
+          </div>
+        </nav>
+        <div id="Scores">
+            <h5>Scan Quality : <input type="text" id="qualityInputBox" size="20" style="background-color:#DCDCDC;text-align:center;"></h5> 
+
+        </div>
+        
+        <div id="content-capture" style="display : none;">    
+            
+            <div style="text-align: center; margin-bottom: 15px; padding-top: 10px;">
+                <label for="fraternoIdInput"><b>ID del Fraterno:</b></label>
+                <input type="number" id="fraternoIdInput" placeholder="Ingrese ID aquí (Solo para Guardar)" required style="padding: 5px; border: 1px solid #ccc; width: 200px;">
+            </div>
+            <div id="status"></div>            
+            <div id="imagediv"></div>
+            <div id="contentButtons">
+                <table width=70% align="center">
+                    <tr>
+                        <td>
+                            <input type="button" class="btn btn-primary" id="clearButton" value="Clear" onclick="Javascript:onClear()">
+                        </td>
+                        <td data-toggle="tooltip" title="Guardará la huella con el ID de Fraterno.">
+                            <input type="button" class="btn btn-success" id="save" value="GUARDAR (Enrolar)">
+                        </td>
+                                                <td data-toggle="tooltip" title="Verificará la huella escaneada contra todas las huellas de la base de datos (Match 1:N).">
+                            <input type="button" class="btn btn-warning" id="verifyButton" value="VERIFICAR">
+                        </td>
+                                                <td>
+                            <input type="button" class="btn btn-primary" id="start" value="Start" onclick="Javascript:onStart()">
+                        </td>
+                        <td>
+                           <input type="button" class="btn btn-primary" id="stop" value="Stop" onclick="Javascript:onStop()">
+                        </td>
+                        <td>
+                            <input type="button" class="btn btn-primary" id="info" value="Info" onclick="Javascript:onGetInfo()">
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        
+            <div id="imageGallery">
+            </div>
+            <div id="deviceInfo">           
+            </div>
+
+            <div id="saveAndFormats">
+              
+              <form name="myForm" style ="border : solid grey;padding:5px;">
+              <b>Acquire Formats :</b><br>
+              <table>
+                <tr data-toggle="tooltip" title="Will save data to a .raw file.">
+                  <td>
+                    <input type="checkbox" name="Raw" value="1" onclick="checkOnly(this)"> RAW  <br>
+                  </td>
+                </tr>
+                <tr data-toggle="tooltip" title="Will save data to a Intermediate file">
+                  <td>
+              <input type="checkbox" name="Intermediate" value="2" onclick="checkOnly(this)"> Feature Set<br>
+                  </td>
+                </tr>
+                <tr data-toggle="tooltip" title="Will save data to a .wsq file.">
+                  <td>
+              <input type="checkbox" name="Compressed" value="3" onclick="checkOnly(this)"> WSQ<br>
+                  </td>
+                </tr>
+                <tr data-toggle="tooltip" title="Will save data to a .png file.">
+                  <td>
+              <input type="checkbox" name="PngImage" checked="true" value="4" onclick="checkOnly(this)"> PNG
+                  </td>
+                </tr>
+              </table>
+              </form>
+              <br>
+             <input type="button" class="btn btn-primary" id="saveImagePng" value="Export" onclick="Javascript:onImageDownload()">
+            </div>
+
+        </div>
+
+        <div id="content-reader">  
+            <h4>Select Reader :</h4>
+            <select class="form-control" id="readersDropDown" onchange="selectChangeEvent()">
+            </select>
+            <div id="readerDivButtons">
+                <table width=70% align="center">
+                    <tr>
+                        <td>
+                            <input type="button" class="btn btn-primary" id="refreshList" value="Refresh List" 
+                                onclick="Javascript:readersDropDownPopulate(false)">
+                        </td>
+                        <td>
+                            <input type="button" class="btn btn-primary" id="capabilities" value="Capabilities"
+                            data-toggle="modal" data-target="#myModal" onclick="Javascript:populatePopUpModal()">
+                        </td>  
+                    </tr>
+                </table>
+
+              <div class="modal fade" id="myModal" role="dialog">
+                <div class="modal-dialog">
+                
+                  <div class="modal-content" id="modalContent" >
+                    <div class="modal-header">
+                      <button type="button" class="close" data-dismiss="modal">&times;</button>
+                      <h4 class="modal-title">Reader Information</h4>
+                    </div>
+                    <div class="modal-body" id="ReaderInformationFromDropDown">
+                      
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                  </div>
+                  
+                </div>
+              </div>
+    
+            </div>
+        </div>
+
+    </div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/scripts/es6-shim.js"></script>
+<script src="/scripts/websdk.client.bundle.min.js"></script>
+<script src="/scripts/fingerprint.sdk.min.js"></script>
+<script src="/scripts/app.js"></script>
+        
+</body>
+</html>
