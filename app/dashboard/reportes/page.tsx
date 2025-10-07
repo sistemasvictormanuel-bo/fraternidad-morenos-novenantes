@@ -117,6 +117,13 @@ export default function ReportesPage() {
             <Download className="mr-2 h-4 w-4" />
             Exportar Excel
           </Button>
+            <Button 
+  variant="secondary" 
+  onClick={fetchStats}
+  className="ml-2"
+>
+  🔄 Actualizar Stats
+</Button>
 
           {/* NUEVO: Dropdown para reportes personalizados */}
           <div className="relative">
