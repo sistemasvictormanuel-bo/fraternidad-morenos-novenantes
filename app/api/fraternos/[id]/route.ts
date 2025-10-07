@@ -5,6 +5,8 @@ import type { Fraterno, FraternoFormData } from "@/lib/types"
 // GET: Obtener un fraterno por ID
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const id = parseInt(params.id) // ← CONVERTIR A NUMBER
+    
     const sql = `
       SELECT f.*, b.nombre_bloque, b.tipobloque
       FROM fraternos f
@@ -12,7 +14,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       WHERE f.id = ?
     `
 
-    const fraternos = await query<Fraterno[]>(sql, [params.id])
+    const fraternos = await query<Fraterno[]>(sql, [id]) // ← Usar id convertido
 
     if (fraternos.length === 0) {
       return NextResponse.json({ success: false, error: "Fraterno no encontrado" }, { status: 404 })
@@ -28,6 +30,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 // PUT: Actualizar fraterno
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const id = parseInt(params.id) // ← CONVERTIR A NUMBER
     const data: FraternoFormData = await request.json()
 
     const sql = `
@@ -58,14 +61,14 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       data.monto_tela_pollera || null,
       data.monto_corse || null,
       data.estado,
-      params.id,
+      id, // ← Usar id convertido
     ]
 
     await query(sql, queryParams)
 
     return NextResponse.json({
       success: true,
-      data: { id: Number.parseInt(params.id), ...data },
+      data: { id: id, ...data }, // ← Usar id convertido
     })
   } catch (error) {
     console.error("[v0] Error updating fraterno:", error)
@@ -76,7 +79,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 // DELETE: Eliminar fraterno
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await query("DELETE FROM fraternos WHERE id = ?", [params.id])
+    const id = parseInt(params.id) // ← CONVERTIR A NUMBER
+    await query("DELETE FROM fraternos WHERE id = ?", [id]) // ← Usar id convertido
 
     return NextResponse.json({ success: true })
   } catch (error) {
