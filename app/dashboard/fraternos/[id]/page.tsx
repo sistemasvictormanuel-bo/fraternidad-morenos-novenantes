@@ -3,7 +3,8 @@ import type { Fraterno } from "@/lib/types"
 
 async function getFraterno(id: string): Promise<Fraterno | null> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/fraternos/${id}`, {
+    // ✅ SOLUCIÓN: Usar URL relativa
+    const response = await fetch(`/api/fraternos/${id}`, {
       cache: "no-store",
     })
     const data = await response.json()
