@@ -8,16 +8,11 @@ export async function GET() {
   try {
     // 🔌 Conexión directa con tu configuración
     connection = await mysql.createConnection(dbConfig)
-
-    // === CONSULTAS DIRECTAS (sin CALL) ===
-
-    // Total de bloques
     const [bloquesRows] = await connection.query(`
       SELECT COUNT(*) AS total FROM bloques
     `)
     const totalBloques = (bloquesRows as any)[0]?.total || 0
-
-    // Total de fraternos
+  
     const [fraternosRows] = await connection.query(`
       SELECT COUNT(*) AS total FROM fraternos
     `)
