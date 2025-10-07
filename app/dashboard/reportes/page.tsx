@@ -35,7 +35,7 @@ export default function ReportesPage() {
   const fetchStats = async () => {
     try {
       setLoading(true)
-      const response = await fetch("/api/stats")
+      const response = await fetch("/api/dashboard/stats")
       const data = await response.json()
       if (data.success) {
         setStats(data.data)
