@@ -145,8 +145,7 @@ export default function FraternosPage() {
                     <TableHead>CI</TableHead>
                     <TableHead>Celular</TableHead>
                     <TableHead>Género</TableHead>
-                    <TableHead>Bloque</TableHead>
-                
+                    <TableHead>Bloque</TableHead>                
                     <TableHead>Huella</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
@@ -159,9 +158,8 @@ export default function FraternosPage() {
                       <TableCell>{fraterno.celular}</TableCell>
                       <TableCell>{fraterno.genero}</TableCell>
                      <TableCell>
-                        {fraterno.nombre_bloque || <span className="text-muted-foreground">Sin asignar</span>}
-                      </TableCell>
-                     
+                        {fraterno.nombre_bloque|| <span className="text-muted-foreground">Sin asignar</span>}
+                      </TableCell>                     
                       <TableCell>
                         {fraterno.huella_template ? (
                           <Fingerprint className="h-4 w-4 text-green-600" />
