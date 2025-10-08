@@ -20,13 +20,21 @@ import {
 import { Download, Users, Layers, Calendar, TrendingUp, Shirt } from "lucide-react"
 import type { ReporteEstadisticas } from "@/lib/types"
 
-
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#82CA9D"]
 
 export default function ReportesPage() {
-  const [stats, setStats] = useState<ReporteEstadisticas | null>(null)
+  const [stats, setStats] = useState<ReporteEstadisticas>({
+    total_fraternos: 0,
+    fraternos_activos: 0,
+    fraternos_inactivos: 0,
+    total_bloques: 0,
+    total_inscripciones: 0,
+    fraternos_por_bloque: [],
+    fraternos_por_genero: [],
+  })
   const [loading, setLoading] = useState(true)
   const [showDropdown, setShowDropdown] = useState(false)
+  const [exporting, setExporting] = useState<string | null>(null)
 
   useEffect(() => {
     fetchStats()
@@ -35,7 +43,7 @@ export default function ReportesPage() {
   const fetchStats = async () => {
     try {
       setLoading(true)
-        const response = await fetch("/api/dashboard/stats", {
+      const response = await fetch("/api/dashboard/stats", {
         cache: "no-store", // ⚡ asegura datos frescos
       })
       const data = await response.json()
@@ -48,44 +56,33 @@ export default function ReportesPage() {
       setLoading(false)
     }
   }
-  const [exporting, setExporting] = useState<string | null>(null)
 
   const handleExportPDF = async (tipo: string) => {
     try {
       setExporting(tipo)
       setShowDropdown(false)
-      
       const response = await fetch(`/api/reportes/${tipo}`)
-      
-      if (!response.ok) {
-        throw new Error('Error al generar el reporte')
-      }
-
+      if (!response.ok) throw new Error("Error al generar el reporte")
       const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
+      const a = document.createElement("a")
       a.href = url
-      
-      // Nombres personalizados para cada reporte
-      const nombresArchivos = {
-        'sin-huella': `fraternos-sin-huella-${new Date().toISOString().split('T')[0]}.pdf`,
-        'tallas-ropa': `tallas-ropa-${new Date().toISOString().split('T')[0]}.pdf`
+      const nombresArchivos: Record<string, string> = {
+        "sin-huella": `fraternos-sin-huella-${new Date().toISOString().split("T")[0]}.pdf`,
+        "tallas-ropa": `tallas-ropa-${new Date().toISOString().split("T")[0]}.pdf`,
       }
-      
-      a.download = nombresArchivos[tipo as keyof typeof nombresArchivos] || `reporte-${tipo}.pdf`
+      a.download = nombresArchivos[tipo] || `reporte-${tipo}.pdf`
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
-      
     } catch (error) {
-      console.error('Error exportando PDF:', error)
-      alert('Error al generar el reporte PDF')
+      console.error("Error exportando PDF:", error)
+      alert("Error al generar el reporte PDF")
     } finally {
       setExporting(null)
     }
   }
-
 
   const handleExportExcel = () => {
     alert("Funcionalidad de exportación a Excel - Por implementar")
@@ -95,14 +92,6 @@ export default function ReportesPage() {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <p className="text-muted-foreground">Cargando reportes...</p>
-      </div>
-    )
-  }
-
-  if (!stats) {
-    return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <p className="text-muted-foreground">No hay datos disponibles</p>
       </div>
     )
   }
@@ -119,29 +108,20 @@ export default function ReportesPage() {
             <Download className="mr-2 h-4 w-4" />
             Exportar Excel
           </Button>
-            <Button 
-  variant="secondary" 
-  onClick={fetchStats}
-  className="ml-2"
->
-  🔄 Actualizar Stats
-</Button>
+          <Button variant="secondary" onClick={fetchStats} className="ml-2">
+            🔄 Actualizar Stats
+          </Button>
 
-          {/* NUEVO: Dropdown para reportes personalizados */}
+          {/* Dropdown reportes */}
           <div className="relative">
-            <Button 
-              variant="default" 
-              disabled={exporting !== null}
-              onClick={() => setShowDropdown(!showDropdown)}
-            >
+            <Button variant="default" disabled={exporting !== null} onClick={() => setShowDropdown(!showDropdown)}>
               <Download className="mr-2 h-4 w-4" />
-              {exporting ? 'Generando...' : 'Reportes Personalizados'}
+              {exporting ? "Generando..." : "Reportes Personalizados"}
             </Button>
-            
             {showDropdown && (
               <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-                <button 
-                  onClick={() => handleExportPDF('sin-huella')}
+                <button
+                  onClick={() => handleExportPDF("sin-huella")}
                   className="flex items-center w-full px-4 py-3 text-sm hover:bg-gray-50 border-b border-gray-100"
                   disabled={exporting !== null}
                 >
@@ -151,8 +131,8 @@ export default function ReportesPage() {
                     <div className="text-xs text-muted-foreground">Lista de miembros sin huella registrada</div>
                   </div>
                 </button>
-                <button 
-                  onClick={() => handleExportPDF('tallas-ropa')}
+                <button
+                  onClick={() => handleExportPDF("tallas-ropa")}
                   className="flex items-center w-full px-4 py-3 text-sm hover:bg-gray-50"
                   disabled={exporting !== null}
                 >
@@ -175,7 +155,7 @@ export default function ReportesPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total_fraternos}</div>
+            <div className="text-2xl font-bold">{stats?.total_fraternos}</div>
             <p className="text-xs text-muted-foreground">Miembros registrados</p>
           </CardContent>
         </Card>
@@ -185,10 +165,10 @@ export default function ReportesPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.fraternos_activos}</div>
+            <div className="text-2xl font-bold">{stats?.fraternos_activos}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.total_fraternos > 0
-                ? `${((stats.fraternos_activos / stats.total_fraternos) * 100).toFixed(1)}% del total`
+              {stats?.total_fraternos > 0
+                ? `${((stats?.fraternos_activos / stats?.total_fraternos) * 100).toFixed(1)}% del total`
                 : "0% del total"}
             </p>
           </CardContent>
@@ -199,7 +179,7 @@ export default function ReportesPage() {
             <Layers className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total_bloques}</div>
+            <div className="text-2xl font-bold">{stats?.total_bloques}</div>
             <p className="text-xs text-muted-foreground">Bloques organizados</p>
           </CardContent>
         </Card>
@@ -209,7 +189,7 @@ export default function ReportesPage() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total_inscripciones}</div>
+            <div className="text-2xl font-bold">{stats?.total_inscripciones}</div>
             <p className="text-xs text-muted-foreground">Inscripciones a eventos</p>
           </CardContent>
         </Card>
@@ -224,13 +204,12 @@ export default function ReportesPage() {
 
         <TabsContent value="bloques" className="space-y-4">
           <Card>
-
             <CardHeader>
               <CardTitle>Fraternos por Bloque</CardTitle>
               <CardDescription>Cantidad de miembros en cada bloque</CardDescription>
             </CardHeader>
             <CardContent>
-              {stats.fraternos_por_bloque.length > 0 ? (
+              {stats?.fraternos_por_bloque?.length > 0 ? (
                 <ResponsiveContainer width="100%" height={400}>
                   <BarChart data={stats.fraternos_por_bloque}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -248,7 +227,6 @@ export default function ReportesPage() {
               )}
             </CardContent>
           </Card>
-
           <Card>
             <CardHeader>
               <CardTitle>Detalle por Bloque</CardTitle>
@@ -256,7 +234,7 @@ export default function ReportesPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {stats.fraternos_por_bloque.length > 0 ? (
+                {stats?.fraternos_por_bloque?.length > 0 ? (
                   stats.fraternos_por_bloque.map((bloque, index) => (
                     <div key={index} className="flex items-center justify-between border-b pb-3 last:border-0">
                       <div className="flex items-center gap-3">
@@ -294,7 +272,7 @@ export default function ReportesPage() {
                 <CardDescription>Proporción de fraternos por género</CardDescription>
               </CardHeader>
               <CardContent>
-                {stats.fraternos_por_genero.length > 0 ? (
+                {stats?.fraternos_por_genero?.length > 0 ? (
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
@@ -329,7 +307,7 @@ export default function ReportesPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {stats.fraternos_por_genero.length > 0 ? (
+                  {stats?.fraternos_por_genero?.length > 0 ? (
                     stats.fraternos_por_genero.map((genero, index) => (
                       <div key={index} className="space-y-2">
                         <div className="flex items-center justify-between">
@@ -369,10 +347,10 @@ export default function ReportesPage() {
                 <CardDescription>Miembros con estado activo</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-4xl font-bold text-green-600">{stats.fraternos_activos}</div>
+                <div className="text-4xl font-bold text-green-600">{stats?.fraternos_activos}</div>
                 <p className="text-sm text-muted-foreground mt-2">
                   {stats.total_fraternos > 0
-                    ? `${((stats.fraternos_activos / stats.total_fraternos) * 100).toFixed(1)}% del total`
+                    ? `${((stats?.fraternos_activos / stats?.total_fraternos) * 100).toFixed(1)}% del total`
                     : "0% del total"}
                 </p>
               </CardContent>
@@ -384,10 +362,10 @@ export default function ReportesPage() {
                 <CardDescription>Miembros con estado inactivo</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-4xl font-bold text-orange-600">{stats.fraternos_inactivos}</div>
+                <div className="text-4xl font-bold text-orange-600">{stats?.fraternos_inactivos}</div>
                 <p className="text-sm text-muted-foreground mt-2">
                   {stats.total_fraternos > 0
-                    ? `${((stats.fraternos_inactivos / stats.total_fraternos) * 100).toFixed(1)}% del total`
+                    ? `${((stats?.fraternos_inactivos / stats?.total_fraternos) * 100).toFixed(1)}% del total`
                     : "0% del total"}
                 </p>
               </CardContent>
@@ -399,7 +377,7 @@ export default function ReportesPage() {
                 <CardDescription>Todos los fraternos registrados</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-4xl font-bold">{stats.total_fraternos}</div>
+                <div className="text-4xl font-bold">{stats?.total_fraternos}</div>
                 <p className="text-sm text-muted-foreground mt-2">Miembros en el sistema</p>
               </CardContent>
             </Card>
@@ -414,8 +392,8 @@ export default function ReportesPage() {
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart
                   data={[
-                    { estado: "Activos", cantidad: stats.fraternos_activos },
-                    { estado: "Inactivos", cantidad: stats.fraternos_inactivos },
+                    { estado: "Activos", cantidad: stats?.fraternos_activos },
+                    { estado: "Inactivos", cantidad: stats?.fraternos_inactivos },
                   ]}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
@@ -432,7 +410,6 @@ export default function ReportesPage() {
       </Tabs>
 
       <Card>
-
         <CardHeader>
           <CardTitle>Resumen General</CardTitle>
           <CardDescription>Información consolidada de la fraternidad</CardDescription>
@@ -444,21 +421,21 @@ export default function ReportesPage() {
               <ul className="space-y-1 text-sm">
                 <li className="flex justify-between">
                   <span className="text-muted-foreground">Total de fraternos:</span>
-                  <span className="font-medium">{stats.total_fraternos}</span>
+                  <span className="font-medium">{stats?.total_fraternos}</span>
                 </li>
                 <li className="flex justify-between">
                   <span className="text-muted-foreground">Fraternos activos:</span>
-                  <span className="font-medium text-green-600">{stats.fraternos_activos}</span>
+                  <span className="font-medium text-green-600">{stats?.fraternos_activos}</span>
                 </li>
                 <li className="flex justify-between">
                   <span className="text-muted-foreground">Fraternos inactivos:</span>
-                  <span className="font-medium text-orange-600">{stats.fraternos_inactivos}</span>
+                  <span className="font-medium text-orange-600">{stats?.fraternos_inactivos}</span>
                 </li>
                 <li className="flex justify-between">
                   <span className="text-muted-foreground">Tasa de actividad:</span>
                   <span className="font-medium">
                     {stats.total_fraternos > 0
-                      ? `${((stats.fraternos_activos / stats.total_fraternos) * 100).toFixed(1)}%`
+                      ? `${((stats?.fraternos_activos / stats?.total_fraternos) * 100).toFixed(1)}%`
                       : "0%"}
                   </span>
                 </li>
@@ -469,7 +446,7 @@ export default function ReportesPage() {
               <ul className="space-y-1 text-sm">
                 <li className="flex justify-between">
                   <span className="text-muted-foreground">Total de bloques:</span>
-                  <span className="font-medium">{stats.total_bloques}</span>
+                  <span className="font-medium">{stats?.total_bloques}</span>
                 </li>
                 <li className="flex justify-between">
                   <span className="text-muted-foreground">Promedio por bloque:</span>
@@ -479,12 +456,14 @@ export default function ReportesPage() {
                 </li>
                 <li className="flex justify-between">
                   <span className="text-muted-foreground">Total inscripciones:</span>
-                  <span className="font-medium">{stats.total_inscripciones}</span>
+                  <span className="font-medium">{stats?.total_inscripciones}</span>
                 </li>
                 <li className="flex justify-between">
                   <span className="text-muted-foreground">Promedio inscripciones:</span>
                   <span className="font-medium">
-                    {stats.total_fraternos > 0 ? (stats.total_inscripciones / stats.total_fraternos).toFixed(1) : "0"}
+                    {stats.total_fraternos > 0
+                      ? (stats.total_inscripciones / stats.total_fraternos).toFixed(1)
+                      : "0"}
                   </span>
                 </li>
               </ul>
