@@ -1,7 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { writeFile, mkdir } from "fs/promises"
-import { join } from "path"
-import { existsSync } from "fs"
+import { v2 as cloudinary } from 'cloudinary'
+
+// Configurar Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+})
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +22,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validaciones para fotos
+    // Validaciones para fotos (igual que antes)
     const allowedImageTypes = ["image/jpeg", "image/png", "image/webp"]
     const maxSize = 5 * 1024 * 1024 // 5MB
     
@@ -35,38 +40,46 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Crear nombre único para el archivo
-    const timestamp = Date.now()
-    const fileExtension = file.name.split('.').pop() || 'jpg'
-    const fileName = `foto_${fraternoId || 'temp'}_${timestamp}.${fileExtension}`
-    const uploadDir = join(process.cwd(), 'public', 'uploads', 'fraternos')
-    
-    // Crear directorio si no existe
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true })
-    }
-
-    const filePath = join(uploadDir, fileName)
+    // Convertir File a buffer
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-    
-    await writeFile(filePath, buffer)
 
-    // Devolver la ruta relativa para guardar en BD
-    const relativePath = `/uploads/fraternos/${fileName}`
+    // Subir a Cloudinary
+    const result = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        {
+          folder: "fraternos",
+          public_id: `foto_${fraternoId || 'temp'}_${Date.now()}`,
+          resource_type: "image",
+          transformation: [
+            { width: 800, height: 800, crop: "limit" }, // Redimensionar
+            { quality: "auto" } // Optimizar calidad
+          ]
+        },
+        (error, result) => {
+          if (error) reject(error)
+          else resolve(result)
+        }
+      ).end(buffer)
+    })
+
+    // El resultado de Cloudinary contiene la URL segura
+    const cloudinaryResult = result as any
 
     return NextResponse.json({
       success: true,
       data: {
-        path: relativePath,
-        fileName: fileName
+        path: cloudinaryResult.secure_url, // URL completa de Cloudinary
+        fileName: cloudinaryResult.public_id,
+        width: cloudinaryResult.width,
+        height: cloudinaryResult.height
       }
     })
 
   } catch (error) {
-    console.error("[v0] Error uploading file:", error)
+    console.error("[v0] Error uploading to Cloudinary:", error)
     return NextResponse.json(
-      { success: false, error: "Error al subir archivo" },
+      { success: false, error: "Error al subir archivo a Cloudinary" },
       { status: 500 }
     )
   }
