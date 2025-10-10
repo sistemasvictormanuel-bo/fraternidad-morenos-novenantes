@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "fraternidad-morenada-secret-key-2024")
+
 export async function middleware(request: NextRequest) {
+  // Para reactivar el login, descomenta todo el código a continuación
+
+  /*
   const { pathname } = request.nextUrl
 
   // Rutas públicas que no requieren autenticación
@@ -9,12 +14,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Verificar cookie para rutas protegidas
+  // Verificar token para rutas protegidas
   if (pathname.startsWith("/dashboard") || pathname.startsWith("/api")) {
-    // ✅ BUSCAR COOKIE 'user' (que es la que guarda tu login)
-    const userCookie = request.cookies.get("user")
+    const token = request.cookies.get("auth-token")
 
-    if (!userCookie) {
+    if (!token) {
       if (pathname.startsWith("/api")) {
         return NextResponse.json({ error: "No autenticado" }, { status: 401 })
       }
@@ -22,15 +26,14 @@ export async function middleware(request: NextRequest) {
     }
 
     try {
-      // ✅ VERIFICACIÓN SIMPLE - solo que exista y sea JSON válido
-      const userData = JSON.parse(userCookie.value)
-      
+      const { payload } = await jwtVerify(token.value, JWT_SECRET)
+
       // Agregar información del usuario a los headers
       const requestHeaders = new Headers(request.headers)
-      requestHeaders.set("x-user-id", String(userData.id))
-      requestHeaders.set("x-user-role", String(userData.role))
-      if (userData.fraterno_id) {
-        requestHeaders.set("x-fraterno-id", String(userData.fraterno_id))
+      requestHeaders.set("x-user-id", String(payload.id))
+      requestHeaders.set("x-user-role", String(payload.role))
+      if (payload.fraterno_id) {
+        requestHeaders.set("x-fraterno-id", String(payload.fraterno_id))
       }
 
       return NextResponse.next({
@@ -39,13 +42,14 @@ export async function middleware(request: NextRequest) {
         },
       })
     } catch (error) {
-      console.error("[v0] Cookie verification failed:", error)
+      console.error("[v0] JWT verification failed:", error)
       if (pathname.startsWith("/api")) {
-        return NextResponse.json({ error: "Sesión inválida" }, { status: 401 })
+        return NextResponse.json({ error: "Token inválido" }, { status: 401 })
       }
       return NextResponse.redirect(new URL("/login", request.url))
     }
   }
+  */
 
   return NextResponse.next()
 }
