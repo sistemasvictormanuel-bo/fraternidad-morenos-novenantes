@@ -35,16 +35,15 @@ export async function GET() {
     const connection = await mysql.createConnection(dbConfig);
 
     const [rows] = await connection.execute(`
-      SELECT 
-        b.nombre_bloque,
-        COUNT(f.id) as total_fraternos,
-        SUM(CASE WHEN f.genero = 'Masculino' THEN 1 ELSE 0 END) as varones,
-        SUM(CASE WHEN f.genero = 'Femenino' THEN 1 ELSE 0 END) as mujeres
-      FROM bloques b
-      LEFT JOIN fraternos f ON f.bloque_id = b.id
-      WHERE f.estado = 1
-      GROUP BY b.id, b.nombre_bloque
-      ORDER BY b.nombre_bloque
+       SELECT 
+    b.nombre_bloque,
+    COUNT(f.id) as total_fraternos,
+    SUM(CASE WHEN f.genero = 'Masculino' THEN 1 ELSE 0 END) as varones,
+    SUM(CASE WHEN f.genero = 'Femenino' THEN 1 ELSE 0 END) as mujeres
+FROM bloques b
+LEFT JOIN fraternos f ON f.bloque_id = b.id
+GROUP BY b.id, b.nombre_bloque
+ORDER BY b.nombre_bloque
     `);
 
     await connection.end();
@@ -335,4 +334,5 @@ export async function GET() {
       { status: 500 }
     );
   }
+
 }
