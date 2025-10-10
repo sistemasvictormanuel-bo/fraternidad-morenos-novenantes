@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import mysql from 'mysql2/promise';
 import { dbConfig } from '@/lib/db-config'
 
-export async function GET() {
+export async function POST() {  // ✅ CAMBIÉ GET POR POST
   try {
     const connection = await mysql.createConnection({
       host: dbConfig.host,
@@ -11,7 +11,7 @@ export async function GET() {
       password: dbConfig.password,
       database: dbConfig.database
     });
-
+    
     const sql = 'SELECT id as fraterno_id, huella_template FROM fraternos WHERE huella_template IS NOT NULL';
     
     const [rows] = await connection.execute(sql);
@@ -22,16 +22,7 @@ export async function GET() {
       huella_feature_set: row.huella_template
     }));
 
-    // 🔥 AGREGAR ESTOS HEADERS PARA EVITAR CACHE
-    return NextResponse.json(huellasBase64, {
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-        'CDN-Cache-Control': 'no-cache',
-        'Vercel-CDN-Cache-Control': 'no-cache'
-      }
-    });
+    return NextResponse.json(huellasBase64);
 
   } catch (error) {
     console.error('Error obteniendo huellas:', error);
