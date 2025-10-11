@@ -10,172 +10,150 @@ interface PhotoCaptureProps {
   value?: string
   onChange: (photoFile: File | null, previewUrl: string) => void
 }
-
 export function PhotoCapture({ value, onChange }: PhotoCaptureProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
 
-  useEffect(() => {
-    if (!containerRef.current) return
-
-    let stream: MediaStream | null = null
-
-    const startCamera = async () => {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { 
-            facingMode: "user", 
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          },
-          audio: false
-        })
-        
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream
-        }
-        
-        // Mostrar vista de cámara y botón capturar
-        const cameraView = containerRef.current?.querySelector('.camera-view')
-        const initialView = containerRef.current?.querySelector('.initial-view')
-        const captureBtn = containerRef.current?.querySelector('.capture-btn')
-        
-        cameraView?.classList.remove('hidden')
-        initialView?.classList.add('hidden')
-        captureBtn?.classList.remove('hidden')
-        
-      } catch (error) {
-        console.error('Error accediendo a la cámara:', error)
-        alert('No se pudo acceder a la cámara. Verifica los permisos.')
-      }
-    }
-
-    const stopCamera = () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop())
-        stream = null
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: "user", 
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      })
+      
+      streamRef.current = stream
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
       }
       
+      // Mostrar vista de cámara y botón capturar
       const cameraView = containerRef.current?.querySelector('.camera-view')
       const initialView = containerRef.current?.querySelector('.initial-view')
       const captureBtn = containerRef.current?.querySelector('.capture-btn')
-      const previewContainer = containerRef.current?.querySelector('.preview-container')
       
-      cameraView?.classList.add('hidden')
+      cameraView?.classList.remove('hidden')
+      initialView?.classList.add('hidden')
+      captureBtn?.classList.remove('hidden')
+      
+    } catch (error) {
+      console.error('Error accediendo a la cámara:', error)
+      alert('No se pudo acceder a la cámara. Verifica los permisos.')
+    }
+  }
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop())
+      streamRef.current = null
+    }
+    
+    const cameraView = containerRef.current?.querySelector('.camera-view')
+    const initialView = containerRef.current?.querySelector('.initial-view')
+    const captureBtn = containerRef.current?.querySelector('.capture-btn')
+    const previewContainer = containerRef.current?.querySelector('.preview-container')
+    
+    cameraView?.classList.add('hidden')
+    initialView?.classList.remove('hidden')
+    captureBtn?.classList.add('hidden')
+    
+    if (!previewContainer?.classList.contains('hidden')) {
+      initialView?.classList.add('hidden')
+    } else {
       initialView?.classList.remove('hidden')
-      captureBtn?.classList.add('hidden')
+    }
+  }
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current
+      const canvas = canvasRef.current
       
-      // Si no hay foto capturada, mostrar opciones iniciales
-      if (!previewContainer?.classList.contains('hidden')) {
-        initialView?.classList.add('hidden')
-      } else {
-        initialView?.classList.remove('hidden')
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], `foto_camara_${Date.now()}.jpg`, { 
+              type: 'image/jpeg'
+            })
+            
+            const previewUrl = URL.createObjectURL(blob)
+            
+            const previewImg = containerRef.current?.querySelector('.preview-img') as HTMLImageElement
+            const previewContainer = containerRef.current?.querySelector('.preview-container')
+            const initialView = containerRef.current?.querySelector('.initial-view')
+            const cameraView = containerRef.current?.querySelector('.camera-view')
+            
+            if (previewImg) previewImg.src = previewUrl
+            previewContainer?.classList.remove('hidden')
+            initialView?.classList.add('hidden')
+            cameraView?.classList.add('hidden')
+            
+            onChange(file, previewUrl)
+            
+            stopCamera()
+          }
+        }, 'image/jpeg', 0.8)
       }
     }
+  }
 
-    const capturePhoto = () => {
-      if (videoRef.current && canvasRef.current) {
-        const video = videoRef.current
-        const canvas = canvasRef.current
-        
-        canvas.width = video.videoWidth
-        canvas.height = video.videoHeight
-        
-        const ctx = canvas.getContext('2d')
-        if (ctx) {
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-          
-          canvas.toBlob((blob) => {
-            if (blob) {
-              const file = new File([blob], `foto_camara_${Date.now()}.jpg`, { 
-                type: 'image/jpeg'
-              })
-              
-              const previewUrl = URL.createObjectURL(blob)
-              
-              // Mostrar preview
-              const previewImg = containerRef.current?.querySelector('.preview-img') as HTMLImageElement
-              const previewContainer = containerRef.current?.querySelector('.preview-container')
-              const initialView = containerRef.current?.querySelector('.initial-view')
-              const cameraView = containerRef.current?.querySelector('.camera-view')
-              
-              if (previewImg) previewImg.src = previewUrl
-              previewContainer?.classList.remove('hidden')
-              initialView?.classList.add('hidden')
-              cameraView?.classList.add('hidden')
-              
-              // Llamar callback de React
-              onChange(file, previewUrl)
-              
-              stopCamera()
-            }
-          }, 'image/jpeg', 0.8)
-        }
-      }
-    }
-
-    const handleFileUpload = (event: Event) => {
-      const input = event.target as HTMLInputElement
-      const file = input.files?.[0]
-      if (file) {
-        const previewUrl = URL.createObjectURL(file)
-        const previewImg = containerRef.current?.querySelector('.preview-img') as HTMLImageElement
-        const previewContainer = containerRef.current?.querySelector('.preview-container')
-        const initialView = containerRef.current?.querySelector('.initial-view')
-        
-        if (previewImg) previewImg.src = previewUrl
-        previewContainer?.classList.remove('hidden')
-        initialView?.classList.add('hidden')
-        
-        onChange(file, previewUrl)
-      }
-    }
-
-    const removePhoto = () => {
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      const previewUrl = URL.createObjectURL(file)
       const previewImg = containerRef.current?.querySelector('.preview-img') as HTMLImageElement
       const previewContainer = containerRef.current?.querySelector('.preview-container')
       const initialView = containerRef.current?.querySelector('.initial-view')
       
-      if (previewImg && previewImg.src.startsWith('blob:')) {
-        URL.revokeObjectURL(previewImg.src)
+      if (previewImg) previewImg.src = previewUrl
+      previewContainer?.classList.remove('hidden')
+      initialView?.classList.add('hidden')
+      
+      onChange(file, previewUrl)
+      
+      // Limpiar el input para permitir seleccionar el mismo archivo otra vez
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
       }
-      
-      previewContainer?.classList.add('hidden')
-      initialView?.classList.remove('hidden')
-      
-      onChange(null, "")
     }
+  }
 
-    // Agregar event listeners
-    const startCameraBtn = containerRef.current?.querySelector('.start-camera-btn')
-    const captureBtn = containerRef.current?.querySelector('.capture-btn')
-    const cancelCameraBtn = containerRef.current?.querySelector('.cancel-camera-btn')
-    const uploadBtn = containerRef.current?.querySelector('.upload-btn')
-    const fileInput = containerRef.current?.querySelector('.file-input')
-    const removeBtn = containerRef.current?.querySelector('.remove-btn')
+  const removePhoto = () => {
+    const previewImg = containerRef.current?.querySelector('.preview-img') as HTMLImageElement
+    const previewContainer = containerRef.current?.querySelector('.preview-container')
+    const initialView = containerRef.current?.querySelector('.initial-view')
+    
+    if (previewImg && previewImg.src.startsWith('blob:')) {
+      URL.revokeObjectURL(previewImg.src)
+    }
+    
+    previewContainer?.classList.add('hidden')
+    initialView?.classList.remove('hidden')
+    
+    onChange(null, "")
+  }
 
-    startCameraBtn?.addEventListener('click', startCamera)
-    captureBtn?.addEventListener('click', capturePhoto)
-    cancelCameraBtn?.addEventListener('click', stopCamera)
-    uploadBtn?.addEventListener('click', () => fileInput?.dispatchEvent(new MouseEvent('click')))
-    fileInput?.addEventListener('change', handleFileUpload)
-    removeBtn?.addEventListener('click', removePhoto)
-
-    // Cleanup
+  // Cleanup al desmontar el componente
+  useEffect(() => {
     return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop())
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop())
       }
-      
-      startCameraBtn?.removeEventListener('click', startCamera)
-      captureBtn?.removeEventListener('click', capturePhoto)
-      cancelCameraBtn?.removeEventListener('click', stopCamera)
-      uploadBtn?.removeEventListener('click', () => fileInput?.dispatchEvent(new MouseEvent('click')))
-      fileInput?.removeEventListener('change', handleFileUpload)
-      removeBtn?.removeEventListener('click', removePhoto)
     }
-  }, [onChange])
+  }, [])
 
   return (
     <div className="space-y-4" ref={containerRef}>
@@ -189,7 +167,8 @@ export function PhotoCapture({ value, onChange }: PhotoCaptureProps) {
               <Button 
                 type="button" 
                 variant="outline" 
-                className="w-full bg-transparent h-12 start-camera-btn"
+                className="w-full bg-transparent h-12"
+                onClick={startCamera} // ✅ React handler nativo
               >
                 <Camera className="mr-2 h-4 w-4" />
                 Tomar Foto con Cámara
@@ -207,16 +186,19 @@ export function PhotoCapture({ value, onChange }: PhotoCaptureProps) {
               <Button
                 type="button"
                 variant="outline"
-                className="w-full bg-transparent h-12 upload-btn"
+                className="w-full bg-transparent h-12"
+                onClick={() => fileInputRef.current?.click()} // ✅ React handler nativo
               >
                 <Upload className="mr-2 h-4 w-4" />
                 Subir Foto desde Archivo
               </Button>
               
               <input 
+                ref={fileInputRef}
                 type="file" 
                 accept="image/*" 
-                className="hidden file-input"
+                className="hidden"
+                onChange={handleFileUpload} // ✅ React handler nativo
               />
             </div>
           </CardContent>
@@ -245,6 +227,7 @@ export function PhotoCapture({ value, onChange }: PhotoCaptureProps) {
                 <Button 
                   type="button" 
                   className="flex-1 max-w-xs bg-green-600 hover:bg-green-700 capture-btn hidden"
+                  onClick={capturePhoto} // ✅ React handler nativo
                 >
                   <Camera className="mr-2 h-4 w-4" />
                   Capturar Foto
@@ -252,7 +235,7 @@ export function PhotoCapture({ value, onChange }: PhotoCaptureProps) {
                 <Button 
                   type="button" 
                   variant="outline" 
-                  className="cancel-camera-btn"
+                  onClick={stopCamera} // ✅ React handler nativo
                 >
                   <VideoOff className="mr-2 h-4 w-4" />
                   Cancelar
@@ -278,7 +261,7 @@ export function PhotoCapture({ value, onChange }: PhotoCaptureProps) {
                 type="button"
                 variant="destructive"
                 size="icon"
-                className="absolute top-2 right-2 remove-btn"
+                onClick={removePhoto} // ✅ React handler nativo
               >
                 <X className="h-4 w-4" />
               </Button>
