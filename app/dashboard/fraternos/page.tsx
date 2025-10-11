@@ -9,18 +9,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Search, Edit, Trash2, Fingerprint, Eye } from "lucide-react"
-import type { Fraterno } from "@/lib/types"
+import type { Fraterno, Bloque } from "@/lib/types"
 import { Toaster, toast } from "sonner"
 
 export default function FraternosPage() {
   const [fraternos, setFraternos] = useState<Fraterno[]>([])
+  const [bloques, setBloques] = useState<Bloque[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [estadoFilter, setEstadoFilter] = useState<string>("all")
+  const [bloqueFilter, setBloqueFilter] = useState<string>("all")
 
   useEffect(() => {
     fetchFraternos()
-  }, [search, estadoFilter])
+    fetchBloques()
+  }, [search, estadoFilter, bloqueFilter])
 
   const fetchFraternos = async () => {
     try {
@@ -28,6 +31,7 @@ export default function FraternosPage() {
       const params = new URLSearchParams()
       if (search) params.append("search", search)
       if (estadoFilter !== "all") params.append("estado", estadoFilter)
+      if (bloqueFilter !== "all") params.append("bloque_id", bloqueFilter)
 
       const response = await fetch(`/api/fraternos?${params.toString()}`)
       const data = await response.json()
@@ -42,6 +46,18 @@ export default function FraternosPage() {
       toast.error("Error al cargar los fraternos")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchBloques = async () => {
+    try {
+      const response = await fetch("/api/bloques")
+      const data = await response.json()
+      if (data.success) {
+        setBloques(data.data)
+      }
+    } catch (error) {
+      console.error("Error fetching bloques:", error)
     }
   }
 
@@ -99,7 +115,7 @@ export default function FraternosPage() {
           <CardDescription>Buscar y filtrar fraternos registrados</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 flex gap-4">
+          <div className="mb-4 flex flex-col gap-4 sm:flex-row">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -114,10 +130,23 @@ export default function FraternosPage() {
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="all">Todos los estados</SelectItem>
                 <SelectItem value="Activo">Activo</SelectItem>
                 <SelectItem value="Inactivo">Inactivo</SelectItem>
                 <SelectItem value="Suspendido">Suspendido</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={bloqueFilter} onValueChange={setBloqueFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Bloque" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los bloques</SelectItem>
+                {bloques.map((bloque) => (
+                  <SelectItem key={bloque.id} value={bloque.id.toString()}>
+                    {bloque.nombre_bloque}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -145,7 +174,8 @@ export default function FraternosPage() {
                     <TableHead>CI</TableHead>
                     <TableHead>Celular</TableHead>
                     <TableHead>Género</TableHead>
-                    <TableHead>Bloque</TableHead>                
+                    <TableHead>Bloque</TableHead>
+                    <TableHead>Estado</TableHead>
                     <TableHead>Huella</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
@@ -157,9 +187,10 @@ export default function FraternosPage() {
                       <TableCell>{fraterno.ci}</TableCell>
                       <TableCell>{fraterno.celular}</TableCell>
                       <TableCell>{fraterno.genero}</TableCell>
-                     <TableCell>
-                        {fraterno.nombre_bloque|| <span className="text-muted-foreground">Sin asignar</span>}
-                      </TableCell>                     
+                      <TableCell>
+                        {fraterno.nombre_bloque || <span className="text-muted-foreground">Sin asignar</span>}
+                      </TableCell>
+                      <TableCell>{getEstadoBadge(fraterno.estado)}</TableCell>
                       <TableCell>
                         {fraterno.huella_template ? (
                           <Fingerprint className="h-4 w-4 text-green-600" />
