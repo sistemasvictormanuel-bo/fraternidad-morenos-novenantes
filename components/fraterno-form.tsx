@@ -153,12 +153,17 @@ export function FraternoForm({ fraterno, isEdit = false }: FraternoFormProps) {
 
   // CORREGIDO: Función para calcular el total convertiendo a números
   const calcularTotal = () => {
-    return (
+    const total = (
       Number(formData.monto_tela_traje || 0) +
       Number(formData.monto_tela_pollera || 0) +
       Number(formData.monto_corse || 0)
-    ).toFixed(2)
+    )
+    return total.toFixed(2)
   }
+
+  // Determinar qué campos mostrar según género
+  const mostrarCamposMasculinos = formData.genero === "Masculino"
+  const mostrarCamposFemeninos = formData.genero === "Femenino"
 
   return (
     <>
@@ -321,62 +326,101 @@ export function FraternoForm({ fraterno, isEdit = false }: FraternoFormProps) {
             <Card>
               <CardHeader>
                 <CardTitle>Tallas de Vestimenta</CardTitle>
-                <CardDescription>Medidas para el traje de morenada</CardDescription>
+                <CardDescription>
+                  {mostrarCamposMasculinos && "Campos para varones - Talla Blusa/Camisa, Tela Traje y Talla Zapato"}
+                  {mostrarCamposFemeninos && "Campos para damas - Talla Blusa, Mantilla, Corsé, Tela Pollera y Talla Zapato"}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="talla_blusa">Talla Blusa</Label>
-                    <Input
-                      id="talla_blusa"
-                      value={formData.talla_blusa}
-                      onChange={(e) => handleChange("talla_blusa", e.target.value)}
-                      placeholder="Ej: M, L, XL"
-                    />
+                
+                {/* ✅ CAMPOS PARA VARONES */}
+                {mostrarCamposMasculinos && (
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="talla_blusa">Talla Blusa/Camisa</Label>
+                      <Input
+                        id="talla_blusa"
+                        value={formData.talla_blusa}
+                        onChange={(e) => handleChange("talla_blusa", e.target.value)}
+                        placeholder="Ej: M, L, XL"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="tela_traje">Tela Traje</Label>
+                      <Input
+                        id="tela_traje"
+                        value={formData.tela_traje}
+                        onChange={(e) => handleChange("tela_traje", e.target.value)}
+                        placeholder="Tipo de tela para traje"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="talla_zapato">Talla Zapato</Label>
+                      <Input
+                        id="talla_zapato"
+                        value={formData.talla_zapato}
+                        onChange={(e) => handleChange("talla_zapato", e.target.value)}
+                        placeholder="Ej: 38, 40, 42"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="talla_zapato">Talla Zapato</Label>
-                    <Input
-                      id="talla_zapato"
-                      value={formData.talla_zapato}
-                      onChange={(e) => handleChange("talla_zapato", e.target.value)}
-                      placeholder="Ej: 38, 40, 42"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="talla_mantilla">Talla Mantilla</Label>
-                    <Input
-                      id="talla_mantilla"
-                      value={formData.talla_mantilla}
-                      onChange={(e) => handleChange("talla_mantilla", e.target.value)}
-                    />
-                  </div>
-                </div>
+                )}
 
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="tela_traje">Tela Traje</Label>
-                    <Input
-                      id="tela_traje"
-                      value={formData.tela_traje}
-                      onChange={(e) => handleChange("tela_traje", e.target.value)}
-                      placeholder="Tipo de tela"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="tela_pollera">Tela Pollera</Label>
-                    <Input
-                      id="tela_pollera"
-                      value={formData.tela_pollera}
-                      onChange={(e) => handleChange("tela_pollera", e.target.value)}
-                      placeholder="Tipo de tela"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="corse">Corsé</Label>
-                    <Input id="corse" value={formData.corse} onChange={(e) => handleChange("corse", e.target.value)} />
-                  </div>
-                </div>
+                {/* ✅ CAMPOS PARA DAMAS */}
+                {mostrarCamposFemeninos && (
+                  <>
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="talla_blusa">Talla Blusa/Camisa</Label>
+                        <Input
+                          id="talla_blusa"
+                          value={formData.talla_blusa}
+                          onChange={(e) => handleChange("talla_blusa", e.target.value)}
+                          placeholder="Ej: M, L, XL"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="talla_mantilla">Talla Mantilla</Label>
+                        <Input
+                          id="talla_mantilla"
+                          value={formData.talla_mantilla}
+                          onChange={(e) => handleChange("talla_mantilla", e.target.value)}
+                          placeholder="Medida de mantilla"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="corse">Corsé</Label>
+                        <Input 
+                          id="corse" 
+                          value={formData.corse} 
+                          onChange={(e) => handleChange("corse", e.target.value)}
+                          placeholder="Medida de corsé"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="tela_pollera">Tela Pollera</Label>
+                        <Input
+                          id="tela_pollera"
+                          value={formData.tela_pollera}
+                          onChange={(e) => handleChange("tela_pollera", e.target.value)}
+                          placeholder="Tipo de tela para pollera"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="talla_zapato">Talla Zapato</Label>
+                        <Input
+                          id="talla_zapato"
+                          value={formData.talla_zapato}
+                          onChange={(e) => handleChange("talla_zapato", e.target.value)}
+                          placeholder="Ej: 38, 40, 42"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
               </CardContent>
             </Card>
           </TabsContent>
@@ -385,46 +429,61 @@ export function FraternoForm({ fraterno, isEdit = false }: FraternoFormProps) {
             <Card>
               <CardHeader>
                 <CardTitle>Costos de Vestimenta</CardTitle>
-                <CardDescription>Montos asociados a la vestimenta</CardDescription>
+                <CardDescription>
+                  {mostrarCamposMasculinos && "Monto para tela de traje (varones)"}
+                  {mostrarCamposFemeninos && "Montos para tela de pollera y corsé (damas)"}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="monto_tela_traje">Monto Tela Traje (Bs.)</Label>
-                    <Input
-                      id="monto_tela_traje"
-                      type="number"
-                      step="0.01"
-                      value={formData.monto_tela_traje || ""}
-                      onChange={(e) => handleChange("monto_tela_traje", e.target.value === "" ? null : Number(e.target.value))}
-                    />
+                
+                {/* ✅ COSTOS PARA VARONES */}
+                {mostrarCamposMasculinos && (
+                  <div className="grid gap-4 md:grid-cols-1">
+                    <div className="space-y-2">
+                      <Label htmlFor="monto_tela_traje">Monto Tela Traje (Bs.)</Label>
+                      <Input
+                        id="monto_tela_traje"
+                        type="number"
+                        step="0.01"
+                        value={formData.monto_tela_traje || ""}
+                        onChange={(e) => handleChange("monto_tela_traje", e.target.value === "" ? null : Number(e.target.value))}
+                        placeholder="0.00"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="monto_tela_pollera">Monto Tela Pollera (Bs.)</Label>
-                    <Input
-                      id="monto_tela_pollera"
-                      type="number"
-                      step="0.01"
-                      value={formData.monto_tela_pollera || ""}
-                      onChange={(e) => handleChange("monto_tela_pollera", e.target.value === "" ? null : Number(e.target.value))}
-                    />
+                )}
+
+                {/* ✅ COSTOS PARA DAMAS */}
+                {mostrarCamposFemeninos && (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="monto_tela_pollera">Monto Tela Pollera (Bs.)</Label>
+                      <Input
+                        id="monto_tela_pollera"
+                        type="number"
+                        step="0.01"
+                        value={formData.monto_tela_pollera || ""}
+                        onChange={(e) => handleChange("monto_tela_pollera", e.target.value === "" ? null : Number(e.target.value))}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="monto_corse">Monto Corsé (Bs.)</Label>
+                      <Input
+                        id="monto_corse"
+                        type="number"
+                        step="0.01"
+                        value={formData.monto_corse || ""}
+                        onChange={(e) => handleChange("monto_corse", e.target.value === "" ? null : Number(e.target.value))}
+                        placeholder="0.00"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="monto_corse">Monto Corsé (Bs.)</Label>
-                    <Input
-                      id="monto_corse"
-                      type="number"
-                      step="0.01"
-                      value={formData.monto_corse || ""}
-                      onChange={(e) => handleChange("monto_corse", e.target.value === "" ? null : Number(e.target.value))}
-                    />
-                  </div>
-                </div>
+                )}
 
                 <div className="rounded-lg border bg-muted/50 p-4">
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Total Estimado:</span>
-                    {/* CORREGIDO: Usar la función que convierte a números */}
                     <span className="text-2xl font-bold">Bs. {calcularTotal()}</span>
                   </div>
                 </div>
@@ -432,6 +491,7 @@ export function FraternoForm({ fraterno, isEdit = false }: FraternoFormProps) {
             </Card>
           </TabsContent>
 
+          {/* ✅ TAB DE BIOMETRÍA SIN MODIFICACIONES */}
           <TabsContent value="biometria" className="space-y-4">
             <Card>
               <CardHeader>
@@ -455,7 +515,6 @@ export function FraternoForm({ fraterno, isEdit = false }: FraternoFormProps) {
                     </p>
                   </div>
                   
-                  {/* ✅ COMPONENTE DE BIOMETRÍA MEJORADO */}
                   <BiometricCaptureModern 
                     isEdit={isEdit} 
                     fraterno={fraterno} 
@@ -473,7 +532,6 @@ export function FraternoForm({ fraterno, isEdit = false }: FraternoFormProps) {
                   />
                 </div>
 
-                {/* ✅ INSTRUCCIONES PARA EL USUARIO */}
                 {!fraternoGuardadoId && !isEdit && (
                   <Alert className="bg-amber-50 border-amber-200">
                     <AlertDescription className="text-amber-800">
