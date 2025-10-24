@@ -9,21 +9,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Search, Edit, Trash2, Fingerprint, Eye } from "lucide-react"
-import type { Fraterno, Bloque } from "@/lib/types"
+import type { Fraterno } from "@/lib/types"
 import { Toaster, toast } from "sonner"
 
 export default function FraternosPage() {
   const [fraternos, setFraternos] = useState<Fraterno[]>([])
-  const [bloques, setBloques] = useState<Bloque[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [estadoFilter, setEstadoFilter] = useState<string>("all")
-  const [bloqueFilter, setBloqueFilter] = useState<string>("all")
+  const [eventoFilter, setEventoFilter] = useState<string>("all")
 
   useEffect(() => {
     fetchFraternos()
-    fetchBloques()
-  }, [search, estadoFilter, bloqueFilter])
+  }, [search, estadoFilter, eventoFilter])
 
   const fetchFraternos = async () => {
     try {
@@ -31,7 +29,8 @@ export default function FraternosPage() {
       const params = new URLSearchParams()
       if (search) params.append("search", search)
       if (estadoFilter !== "all") params.append("estado", estadoFilter)
-      if (bloqueFilter !== "all") params.append("bloque_id", bloqueFilter)
+      if (eventoFilter !== "all") params.append("evento", eventoFilter)
+        
 
       const response = await fetch(`/api/fraternos?${params.toString()}`)
       const data = await response.json()
@@ -46,18 +45,6 @@ export default function FraternosPage() {
       toast.error("Error al cargar los fraternos")
     } finally {
       setLoading(false)
-    }
-  }
-
-  const fetchBloques = async () => {
-    try {
-      const response = await fetch("/api/bloques")
-      const data = await response.json()
-      if (data.success) {
-        setBloques(data.data)
-      }
-    } catch (error) {
-      console.error("Error fetching bloques:", error)
     }
   }
 
@@ -91,11 +78,24 @@ export default function FraternosPage() {
     return <Badge variant={variants[estado] || "default"}>{estado}</Badge>
   }
 
+  const getEventoBadge = (evento: string | undefined) => {
+    if (!evento) return <Badge variant="outline">Sin evento</Badge>
+
+    const colorVariants: Record<string, string> = {
+      Campeonato: "bg-red-500 text-white",
+      Cultural: "bg-yellow-400 text-black",
+      Religioso: "bg-green-500 text-white",
+      Desfile: "bg-blue-500 text-white",
+    }
+
+    const colorClass = colorVariants[evento] || "bg-gray-400 text-white"
+    return <Badge className={colorClass}>{evento}</Badge>
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Toaster a nivel superior */}
       <Toaster richColors position="top-right" />
-      
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Fraternos</h2>
@@ -115,8 +115,9 @@ export default function FraternosPage() {
           <CardDescription>Buscar y filtrar fraternos registrados</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 flex flex-col gap-4 sm:flex-row">
-            <div className="relative flex-1">
+          <div className="mb-4 flex flex-wrap gap-4">
+            {/* Búsqueda */}
+            <div className="relative flex-1 min-w-[250px]">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Buscar por nombre, CI o celular..."
@@ -125,30 +126,33 @@ export default function FraternosPage() {
                 className="pl-10"
               />
             </div>
+
+            {/* Filtro por Estado */}
             <Select value={estadoFilter} onValueChange={setEstadoFilter}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos los estados</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="Activo">Activo</SelectItem>
                 <SelectItem value="Inactivo">Inactivo</SelectItem>
                 <SelectItem value="Suspendido">Suspendido</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={bloqueFilter} onValueChange={setBloqueFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Bloque" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los bloques</SelectItem>
-                {bloques.map((bloque) => (
-                  <SelectItem key={bloque.id} value={bloque.id.toString()}>
-                    {bloque.nombre_bloque}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+            {/* 🆕 Filtro por Evento */}
+           <Select value={eventoFilter} onValueChange={setEventoFilter}>
+  <SelectTrigger className="w-[180px]">
+    <SelectValue placeholder="Evento" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="all">Todos</SelectItem>
+    <SelectItem value="Campeonato">🏆 Campeonato</SelectItem>
+    <SelectItem value="Cultural">🎭 Cultural</SelectItem>
+    
+  </SelectContent>
+</Select>
+
           </div>
 
           {loading ? (
@@ -174,9 +178,10 @@ export default function FraternosPage() {
                     <TableHead>CI</TableHead>
                     <TableHead>Celular</TableHead>
                     <TableHead>Género</TableHead>
-                    <TableHead>Bloque</TableHead>
-                    <TableHead>Estado</TableHead>
+                    <TableHead>Bloque</TableHead>                  
                     <TableHead>Huella</TableHead>
+                    <TableHead>Evento inscrito</TableHead>
+                    <TableHead>Fecha de inscripción</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -190,7 +195,6 @@ export default function FraternosPage() {
                       <TableCell>
                         {fraterno.nombre_bloque || <span className="text-muted-foreground">Sin asignar</span>}
                       </TableCell>
-                      <TableCell>{getEstadoBadge(fraterno.estado)}</TableCell>
                       <TableCell>
                         {fraterno.huella_template ? (
                           <Fingerprint className="h-4 w-4 text-green-600" />
@@ -198,6 +202,13 @@ export default function FraternosPage() {
                           <span className="text-xs text-muted-foreground">No registrada</span>
                         )}
                       </TableCell>
+                      <TableCell>{getEventoBadge(fraterno.nombre_evento)}</TableCell>
+                      <TableCell>
+                        {fraterno.fecha_inscripcion
+                          ? new Date(fraterno.fecha_inscripcion).toLocaleDateString()
+                          : "—"}
+                      </TableCell>
+
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Link href={`/dashboard/fraternos/${fraterno.id}/kardex`}>
