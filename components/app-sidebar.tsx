@@ -1,8 +1,9 @@
 "use client"
-import { Users, Layers, Calendar, FileText, Home, Fingerprint } from "lucide-react"
+
+import { Users, Layers, Calendar, FileText, Home, Fingerprint, UserPlus, LogOut } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import {  UserPlus ,LogOut} from 'lucide-react'
+import Image from "next/image"
 
 import {
   Sidebar,
@@ -58,7 +59,7 @@ const menuItems = [
   },
   {
     title: "Gestión de Usuarios",
-    url: "/dashboard/usuarios", 
+    url: "/dashboard/usuarios",
     icon: Users,
     subitems: [
       {
@@ -67,7 +68,7 @@ const menuItems = [
         icon: Users
       },
       {
-        title: "Crear Usuario", 
+        title: "Crear Usuario",
         url: "/dashboard/usuarios/crear",
         icon: UserPlus
       }
@@ -84,7 +85,6 @@ export function AppSidebar() {
       const response = await fetch('/api/auth/logout', {
         method: 'POST'
       })
-      
       if (response.ok) {
         window.location.href = '/login'
       }
@@ -95,10 +95,19 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
+      {/* --- ENCABEZADO CON LOGO --- */}
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Users className="h-6 w-6" />
+          {/* Imagen en lugar del icono */}
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 overflow-hidden">
+            <Image
+              src="/logofrate.png"
+              alt="Logo Fraternidad"
+              width={80}
+              height={80}
+              className="object-contain"
+              priority
+            />
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-semibold">Fraternidad</span>
@@ -106,7 +115,8 @@ export function AppSidebar() {
           </div>
         </div>
       </SidebarHeader>
-      
+
+      {/* --- CONTENIDO PRINCIPAL --- */}
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Gestión</SidebarGroupLabel>
@@ -115,7 +125,6 @@ export function AppSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   {item.subitems ? (
-                    // Item con submenú
                     <SidebarMenuButton asChild>
                       <Link href={item.url}>
                         <item.icon className="h-4 w-4" />
@@ -123,7 +132,6 @@ export function AppSidebar() {
                       </Link>
                     </SidebarMenuButton>
                   ) : (
-                    // Item normal
                     <SidebarMenuButton asChild isActive={pathname === item.url}>
                       <Link href={item.url}>
                         <item.icon className="h-4 w-4" />
@@ -131,8 +139,7 @@ export function AppSidebar() {
                       </Link>
                     </SidebarMenuButton>
                   )}
-                  
-                  {/* Renderizar subitems si existen */}
+
                   {item.subitems && (
                     <SidebarMenuSub>
                       {item.subitems.map((subitem) => (
@@ -153,10 +160,10 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      
+
+      {/* --- PIE DE SIDEBAR --- */}
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <div className="space-y-2">
-          {/* Botón de Logout */}
           <button
             onClick={handleLogout}
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -164,8 +171,7 @@ export function AppSidebar() {
             <LogOut className="h-4 w-4" />
             <span>Cerrar Sesión</span>
           </button>
-          
-          {/* Información de versión */}
+
           <div className="text-xs text-muted-foreground">
             <p className="font-medium">Sistema de Gestión</p>
             <p>Versión 1.0.0</p>
