@@ -32,6 +32,11 @@ export interface Fraterno {
   created_at: string
   updated_at: string
   bloque?: Bloque
+
+    
+  // 🆕 Campos añadidos del JOIN con inscripciones y eventos
+  nombre_evento?: string
+  fecha_inscripcion?: string
 }
 
 export interface Bloque {
